@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>兒童／新生兒給藥換算器｜Pediatric Dose Calculator</title>
+    <meta name="description" content="以 mg/kg × kg ÷ (mg/mL) 計算需抽 mL 與至少需要幾支藥。適用於兒童與新生兒劑量換算。" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>💉</text></svg>">
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React 18 + ReactDOM (production) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for in-browser JSX transform -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body class="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900">
+    <a class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-white px-3 py-2 rounded-md border" href="#main">跳至主要內容</a>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useMemo, useState } = React;
+
+      // ---------- utils ----------
+      const roundN = (val, n) => {
+        if (!Number.isFinite(val)) return 0;
+        const f = Math.pow(10, n);
+        return Math.round(val * f) / f;
+      };
+      const safeNum = (v) => (Number.isFinite(v) && v >= 0 ? v : 0);
+      const numOrZero = (s) => {
+        if (s === "" || s === null || s === undefined) return 0;
+        const n = Number(s);
+        return Number.isFinite(n) ? n : 0;
+      };
+
+      // ---------- tiny stat component ----------
+      function Stat({ label, value, mono }) {
+        return (
+          <div className="rounded-xl border border-slate-200 p-3 bg-white">
+            <div className="text-xs text-slate-500">{label}</div>
+            <div className={"text-lg font-semibold " + (mono ? "font-mono" : "")}>{value}</div>
+          </div>
+        );
+      }
+
+      function App() {
+        // 預設：0.01 mg/kg、30 kg、1 mg/mL、1 mL/支
+        const [doseMgPerKg, setDoseMgPerKg] = useState(0.01);
+        const [weightKg, setWeightKg] = useState(30);
+        const [concentrationMgPerMl, setConcentrationMgPerMl] = useState(1);
+        const [vialVolumeMl, setVialVolumeMl] = useState(1);
+        const [decimals, setDecimals] = useState(2);
+
+        const data = useMemo(() => {
+          const d = safeNum(doseMgPerKg);
+          const w = safeNum(weightKg);
+          const c = safeNum(concentrationMgPerMl);
+          const vv = safeNum(vialVolumeMl);
+
+          const totalMg = d * w;                       // mg
+          const totalMl = c > 0 ? totalMg / c : 0;     // mL
+          const mgPerVial = c * vv;                    // mg/支
+          const vialsExact = vv > 0 ? totalMl / vv : 0;
+          const vialsCeil = Math.ceil(vialsExact > 0 ? vialsExact : 0);
+          const wholeVials = vv > 0 ? Math.floor(totalMl / vv) : 0;
+          let remainderMl = totalMl - wholeVials * vv;
+          if (remainderMl < 1e-9) remainderMl = 0;
+
+          return { totalMg, totalMl, mgPerVial, vialsExact, vialsCeil, wholeVials, remainderMl };
+        }, [doseMgPerKg, weightKg, concentrationMgPerMl, vialVolumeMl]);
+
+        const onNum = (setter) => (e) => setter(numOrZero(e.target.value));
+
+        return (
+          <main id="main" className="mx-auto max-w-4xl px-4 py-8">
+            <header className="mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">兒童／新生兒給藥換算器</h1>
+              <p className="text-sm md:text-base text-slate-600 mt-1">
+                公式：<span className="font-mono">體積(mL) = [劑量(mg/kg) × 體重(kg)] ÷ 濃度(mg/mL)</span>。
+                可同時得到需抽 mL 與至少需要幾支（向上取整）。
+              </p>
+            </header>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Inputs -->
+              <section aria-labelledby="inputs" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 id="inputs" className="text-lg font-semibold mb-4">輸入參數</h2>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-5 items-end gap-2">
+                    <label className="col-span-3 text-sm text-slate-700">劑量 Dose</label>
+                    <input
+                      type="number" inputMode="decimal" step="0.001" min="0" aria-label="劑量 mg/kg"
+                      value={doseMgPerKg} onChange={onNum(setDoseMgPerKg)}
+                      className="col-span-3 md:col-span-2 w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                      placeholder="例如 0.01"
+                    />
+                    <div className="col-span-2 md:col-span-3 text-sm text-slate-500">mg/kg</div>
+                  </div>
+
+                  <div className="grid grid-cols-5 items-end gap-2">
+                    <label className="col-span-3 text-sm text-slate-700">體重 Weight</label>
+                    <input
+                      type="number" inputMode="decimal" step="0.1" min="0" aria-label="體重 kg"
+                      value={weightKg} onChange={onNum(setWeightKg)}
+                      className="col-span-3 md:col-span-2 w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                      placeholder="例如 30"
+                    />
+                    <div className="col-span-2 md:col-span-3 text-sm text-slate-500">kg</div>
+                  </div>
+
+                  <div className="grid grid-cols-5 items-end gap-2">
+                    <label className="col-span-3 text-sm text-slate-700">濃度 Concentration</label>
+                    <input
+                      type="number" inputMode="decimal" step="0.01" min="0" aria-label="濃度 mg/mL"
+                      value={concentrationMgPerMl} onChange={onNum(setConcentrationMgPerMl)}
+                      className="col-span-3 md:col-span-2 w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                      placeholder="例如 1"
+                    />
+                    <div className="col-span-2 md:col-span-3 text-sm text-slate-500">mg/mL</div>
+                  </div>
+
+                  <div className="grid grid-cols-5 items-end gap-2">
+                    <label className="col-span-3 text-sm text-slate-700">每支容量 Vial volume</label>
+                    <input
+                      type="number" inputMode="decimal" step="0.01" min="0" aria-label="每支容量 mL"
+                      value={vialVolumeMl} onChange={onNum(setVialVolumeMl)}
+                      className="col-span-3 md:col-span-2 w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                      placeholder="例如 1"
+                    />
+                    <div className="col-span-2 md:col-span-3 text-sm text-slate-500">mL/支</div>
+                  </div>
+
+                  <div className="grid grid-cols-5 items-end gap-2">
+                    <label className="col-span-3 text-sm text-slate-700">顯示小數位數</label>
+                    <input
+                      type="number" step="1" min="0" max="4" aria-label="顯示小數位數"
+                      value={decimals} onChange={onNum(setDecimals)}
+                      className="col-span-3 md:col-span-2 w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    />
+                    <div className="col-span-2 md:col-span-3 text-sm text-slate-500">位</div>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={() => { setDoseMgPerKg(0.01); setWeightKg(30); setConcentrationMgPerMl(1); setVialVolumeMl(1); setDecimals(2); }}
+                      className="rounded-xl bg-slate-900 px-4 py-2 text-white shadow hover:bg-slate-800"
+                    >
+                      套用範例（0.01 mg/kg，30 kg，1 mg/mL，1 mL/支）
+                    </button>
+                    <button
+                      onClick={() => { setDoseMgPerKg(0); setWeightKg(0); setConcentrationMgPerMl(0); setVialVolumeMl(0); }}
+                      className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 shadow-sm hover:bg-slate-50"
+                    >
+                      清空
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Results -->
+              <section aria-labelledby="results" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 id="results" className="text-lg font-semibold mb-4">結果</h2>
+                <div className="space-y-3 text-sm">
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <div className="font-medium">計算公式</div>
+                    <div className="text-slate-700 mt-1 leading-relaxed">
+                      體積(mL) ＝ <span className="font-mono">[劑量(mg/kg) × 體重(kg)] ÷ 濃度(mg/mL)</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Stat label="總劑量 (mg)" value={roundN(data.totalMg, decimals).toFixed(decimals)} mono />
+                    <Stat label="需抽體積 (mL)" value={roundN(data.totalMl, decimals).toFixed(decimals)} mono />
+                    <Stat label="每支總含量 (mg)" value={roundN(data.mgPerVial, decimals).toFixed(decimals)} mono />
+                    <Stat label="至少需要開幾支" value={data.vialsCeil} />
+                  </div>
+
+                  <hr className="border-slate-200 my-2" />
+
+                  <div>
+                    <div className="font-medium mb-1">抽藥建議</div>
+                    {data.vialsCeil === 0 ? (
+                      <p className="text-slate-600">—</p>
+                    ) : (
+                      <ol className="list-decimal pl-5 space-y-1 text-slate-700">
+                        {Array.from({ length: data.wholeVials }).map((_, i) => (
+                          <li key={i}>第 {i + 1} 支：抽 {roundN(vialVolumeMl, decimals).toFixed(decimals)} mL</li>
+                        ))}
+                        {data.remainderMl > 0 && (
+                          <li>第 {data.vialsCeil} 支：抽 {roundN(data.remainderMl, decimals).toFixed(decimals)} mL</li>
+                        )}
+                      </ol>
+                    )}
+                    {data.vialsCeil > 0 && (
+                      <p className="mt-2 text-xs text-slate-500">
+                        ※ 以上以向上取整計算至少需要開 {data.vialsCeil} 支，實際抽取體積合計為 {roundN(data.totalMl, decimals).toFixed(decimals)} mL（{roundN(data.totalMg, decimals).toFixed(decimals)} mg）。
+                      </p>
+                    )}
+                  </div>
+
+                  {(concentrationMgPerMl === 0 || vialVolumeMl === 0) && (
+                    <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-amber-800 text-xs">
+                      請輸入有效的濃度與每支容量以完成計算。
+                    </div>
+                  )}
+
+                  <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
+                    <div className="font-medium mb-1">安全提醒</div>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>再次核對單次與 24 小時內最大允許劑量。</li>
+                      <li>確認標示單位無誤（mg、mL、kg）。</li>
+                      <li>小數位數為顯示格式；實際抽藥請依注射器刻度與院內規範（常以 0.01 mL 為最小刻度）。</li>
+                    </ul>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <footer className="mt-6 text-xs text-slate-500">
+              © 2025 — 僅供教學與輔助計算；臨床處置請依醫囑與院內規範雙人查核。
+            </footer>
+          </main>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
