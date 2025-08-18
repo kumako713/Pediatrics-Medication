@@ -36,18 +36,18 @@
       };
 
       // ---------- tiny stat component ----------
-      function Stat({ label, value, mono, highlight = false }) {
-        const valueClass =
-          (highlight
-            ? "text-red-600 font-extrabold text-3xl md:text-4xl "
-            : "text-lg font-semibold ") + (mono ? "font-mono " : "");
+      function Stat({ label, value, mono, highlight = false, labelClass = "", bgClass = "bg-white" }) {
+         const valueClass =
+           (highlight
+             ? "text-red-600 font-extrabold text-3xl md:text-4xl "
+             : "text-lg font-semibold ") + (mono ? "font-mono " : "");
 
         return (
-          <div className="rounded-xl border border-slate-200 p-3 bg-white">
-            <div className="text-xs text-slate-500">{label}</div>
-            <div className={valueClass}>{value}</div>
+          <div className={`rounded-xl border border-slate-200 p-3 ${bgClass}`}>
+           <div className={`text-xs ${labelClass || "text-slate-500"}`}>{label}</div>
+          <div className={valueClass}>{value}</div>
           </div>
-        );
+           );
        }
 
       function App() {
@@ -176,14 +176,35 @@
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                     {/* 第一列：開幾支、需抽體積（紅、加大、粗體） */}
-                     <Stat label="至少需要開幾支" value={data.vialsCeil} highlight />
-                     <Stat label="需抽體積 (mL)" value={roundN(data.totalMl, decimals).toFixed(decimals)} mono highlight />
+  {/* 第一列：開幾支、需抽體積（紅字標籤 + 米色底 + 大紅粗數值） */}
+  <Stat
+    label="至少需要開幾支"
+    value={data.vialsCeil}
+    highlight
+    labelClass="text-red-700"
+    bgClass="bg-amber-50"
+  />
+  <Stat
+    label="需抽體積 (mL)"
+    value={roundN(data.totalMl, decimals).toFixed(decimals)}
+    mono
+    highlight
+    labelClass="text-red-700"
+    bgClass="bg-amber-50"
+  />
 
-                     {/* 第二列：其餘維持原樣 */}
-                     <Stat label="總劑量 (mg)" value={roundN(data.totalMg, decimals).toFixed(decimals)} mono />
-                     <Stat label="每支總含量 (mg)" value={roundN(data.mgPerVial, decimals).toFixed(decimals)} mono />
-                  </div>
+  {/* 第二列：其餘維持原樣 */}
+  <Stat
+    label="總劑量 (mg)"
+    value={roundN(data.totalMg, decimals).toFixed(decimals)}
+    mono
+  />
+  <Stat
+    label="每支總含量 (mg)"
+    value={roundN(data.mgPerVial, decimals).toFixed(decimals)}
+    mono
+  />
+</div>
 
                   <hr className="border-slate-200 my-2" />
 
