@@ -15,6 +15,7 @@
     <a class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-white px-3 py-2 rounded-md border" href="#main">跳至主要內容</a>
     <div id="root"></div>
 
+    <!-- 重要：用 Babel 轉 JSX -->
     <script type="text/babel" data-presets="react,env">
       const { useMemo, useState } = React;
 
@@ -48,7 +49,7 @@
         // 預設值：0.01 mg/kg、30 kg、每支總量 1 mg、每支 1 mL → 等效濃度 1 mg/mL
         const [doseMgPerKg, setDoseMgPerKg] = useState(0.01);
         const [weightKg, setWeightKg] = useState(30);
-        const [totalMgPerVial, setTotalMgPerVial] = useState(1); // ← 改為「每支總量 (mg/支)」
+        const [totalMgPerVial, setTotalMgPerVial] = useState(1); // 每支總量 (mg/支)
         const [vialVolumeMl, setVialVolumeMl] = useState(1);     // 每支容量 (mL/支)
         const [decimals, setDecimals] = useState(2);
 
@@ -149,10 +150,10 @@
                       onClick={() => { setDoseMgPerKg(0.01); setWeightKg(30); setTotalMgPerVial(1); setVialVolumeMl(1); setDecimals(2); }}
                       className="rounded-xl bg-slate-900 px-4 py-2 text-white shadow hover:bg-slate-800"
                     >
-                      套用範例（0.01 mg/kg，30 kg，150 mg/3 mL 例：請改填 1 mg/1 mL → 1 與 1）
+                      套用範例（0.01 mg/kg，30 kg，1 mg/1 mL → 填 1 與 1）
                     </button>
                     <button
-                      onClick={() => { setDoseMgPerKg(0); setWeightKg(0); setTotalMgPerVial(0); setVialVolumeMl(0); }}
+                      onClick={() => { setDoseMgPerVial(0); setWeightKg(0); setTotalMgPerVial(0); setVialVolumeMl(0); }}
                       className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 shadow-sm hover:bg-slate-50"
                     >
                       清空
@@ -177,7 +178,7 @@
                     </div>
                   </div>
 
-                  <!-- 重新排序：第一列＝開幾支、需抽體積（紅字標籤＋米色底＋大紅粗數值） -->
+                  {/* 重新排序：第一列＝開幾支、需抽體積（紅字標籤＋米色底＋大紅粗數值） */}
                   <div className="grid grid-cols-2 gap-3">
                     <Stat
                       label="至少需要開幾支"
@@ -195,7 +196,7 @@
                       bgClass="bg-amber-50"
                     />
 
-                    <!-- 第二列：其餘維持原樣 -->
+                    {/* 第二列：其餘維持原樣 */}
                     <Stat
                       label="總劑量 (mg)"
                       value={roundN(data.totalMg, decimals).toFixed(decimals)}
@@ -259,5 +260,11 @@
       const root = ReactDOM.createRoot(document.getElementById("root"));
       root.render(<App />);
     </script>
+
+    <!-- 如遇 CDN 被擋，可改用 jsDelivr：
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+    -->
   </body>
 </html>
