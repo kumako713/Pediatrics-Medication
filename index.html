@@ -256,12 +256,12 @@
   label="⚠️ 總劑量 (mg)"
   value={roundN(data.totalMg, decimals).toFixed(decimals)}
   mono
-  /* 紅底 + 紅色邊框（覆蓋預設） */
+  /* 紅底 + 紅色邊框 */
   bgClass="bg-red-600 border-red-700"
   /* 標籤：米色 */
   labelClass="text-amber-50"
-  /* 數值：米色粗體（會覆蓋原本的字色/粗細） */
-  valueClassName="text-amber-50 font-bold"
+  /* 數值：米色、字級與粗細與「需要開幾支」一致 */
+  valueClassName="text-amber-50 text-3xl md:text-4xl font-extrabold"
 />
                     <Stat
                       label="每支總含量 (mg)"
