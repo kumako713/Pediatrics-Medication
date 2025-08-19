@@ -100,14 +100,23 @@
         return (
           <main id="main" className="mx-auto max-w-4xl px-4 py-8">
             <header className="mb-6">
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                Pediatric &amp; Neonatal Weight-Based Medication Dosing Calculator
-              </h1>
-              <p className="text-sm md:text-base text-slate-600 mt-1">
-                體積(mL) = <span className="font-mono">[劑量(mg/kg) × 體重(kg)] ÷ 等效濃度(mg/mL)</span>，
-                等效濃度 = <span className="font-mono">每支總量(mg) ÷ 每支容量(mL)</span>。
-              </p>
-            </header>
+  <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+    Pediatric &amp; Neonatal
+  </h1>
+
+  {/* 空一行的視覺留白 */}
+  <div className="h-3 md:h-4"></div>
+
+  <h2 className="text-xl md:text-2xl font-semibold tracking-tight">
+    Weight-Based Medication Dosing Calculator
+  </h2>
+
+  {/* 下面這段若原本有就保留，說明公式 */}
+  <p className="text-sm md:text-base text-slate-600 mt-2">
+    體積(mL) = <span className="font-mono">[劑量(mg/kg) × 體重(kg)] ÷ 等效濃度(mg/mL)</span>，
+    等效濃度 = <span className="font-mono">每支總量(mg) ÷ 每支容量(mL)</span>。
+  </p>
+</header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Inputs */}
