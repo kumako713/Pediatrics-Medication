@@ -48,17 +48,27 @@
       };
 
       // 介面小卡（支援紅字 label、米色底、加大紅粗數值）
-      function Stat({ label, value, mono, highlight = false, labelClass = "", bgClass = "bg-white" }) {
-        const valueClass =
-          (highlight ? "text-red-600 font-extrabold text-3xl md:text-4xl " : "text-lg font-semibold ") +
-          (mono ? "font-mono " : "");
-        return (
-          <div className={`rounded-xl border border-slate-200 p-3 ${bgClass}`}>
-            <div className={`text-xs ${labelClass || "text-slate-500"}`}>{label}</div>
-            <div className={valueClass}>{value}</div>
-          </div>
-        );
-      }
+      function Stat({
+  label,
+  value,
+  mono,
+  highlight = false,
+  labelClass = "",
+  bgClass = "bg-white",
+  valueClassName = "",
+}) {
+  const valueClass =
+    (highlight
+      ? "text-red-600 font-extrabold text-3xl md:text-4xl "
+      : "text-lg font-semibold ") + (mono ? "font-mono " : "");
+
+  return (
+    <div className={`rounded-xl border border-slate-200 p-3 ${bgClass}`}>
+      <div className={`text-xs ${labelClass || "text-slate-500"}`}>{label}</div>
+      <div className={`${valueClass} ${valueClassName}`}>{value}</div>
+    </div>
+  );
+}
 
       function App() {
         // 以字串當 state：可完全清空、自由輸入
@@ -243,10 +253,16 @@
 
                     {/* 第二列：其餘維持原樣 */}
                     <Stat
-                      label="總劑量 (mg)"
-                      value={roundN(data.totalMg, decimals).toFixed(decimals)}
-                      mono
-                    />
+  label="⚠️ 總劑量 (mg)"
+  value={roundN(data.totalMg, decimals).toFixed(decimals)}
+  mono
+  /* 紅底 + 紅色邊框（覆蓋預設） */
+  bgClass="bg-red-600 border-red-700"
+  /* 標籤：米色 */
+  labelClass="text-amber-50"
+  /* 數值：米色粗體（會覆蓋原本的字色/粗細） */
+  valueClassName="text-amber-50 font-bold"
+/>
                     <Stat
                       label="每支總含量 (mg)"
                       value={roundN(data.mgPerVial, decimals).toFixed(decimals)}
