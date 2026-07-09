@@ -1,0 +1,1295 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>小兒／嬰幼兒體重劑量計算工具</title>
+    <meta
+      name="description"
+      content="第一線救護用小兒／嬰幼兒體重劑量計算：mg/kg 或 mcg/kg × 體重 ÷ 濃度，計算需抽 mL 與至少開幾支。可離線單檔使用。"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>💉</text></svg>"
+    />
+    <style>
+      :root {
+        --bg0: #f8fafc;
+        --bg1: #eef2f7;
+        --card: #ffffff;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #dbe3ee;
+        --accent: #0f172a;
+        --warn-bg: #fff7ed;
+        --warn-ink: #9a3412;
+        --warn-line: #fdba74;
+        --danger-bg: #b91c1c;
+        --danger-ink: #fff7ed;
+        --ok-bg: #ecfdf5;
+        --ok-ink: #065f46;
+        --radius: 14px;
+        --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.04);
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        --sans: "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--sans);
+        color: var(--ink);
+        background:
+          radial-gradient(1200px 500px at 10% -10%, #e2e8f0 0%, transparent 55%),
+          linear-gradient(180deg, #ffffff 0%, var(--bg1) 100%);
+      }
+      a.skip {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        background: #fff;
+        border: 1px solid var(--line);
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        z-index: 50;
+      }
+      a.skip:focus { left: 0.5rem; top: 0.5rem; }
+
+      .wrap {
+        width: min(960px, calc(100% - 1.5rem));
+        margin: 0 auto;
+        padding: 1.5rem 0 2.5rem;
+      }
+      header h1 {
+        margin: 0;
+        font-size: clamp(1.55rem, 3.5vw, 2.1rem);
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+      }
+      header .sub {
+        margin: 0.55rem 0 0;
+        font-size: 1.05rem;
+        font-weight: 650;
+        color: #1e293b;
+      }
+      header .formula {
+        margin: 0.65rem 0 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.55;
+      }
+      header .formula code,
+      .mono { font-family: var(--mono); }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-top: 1.25rem;
+      }
+      @media (min-width: 860px) {
+        .grid { grid-template-columns: 1fr 1fr; align-items: start; }
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: calc(var(--radius) + 4px);
+        box-shadow: var(--shadow);
+        padding: 1.1rem 1.15rem 1.2rem;
+      }
+      .card h2 {
+        margin: 0 0 0.9rem;
+        font-size: 1.05rem;
+      }
+
+      .field {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr auto;
+        gap: 0.45rem 0.55rem;
+        align-items: end;
+        margin-bottom: 0.85rem;
+      }
+      .field.full { grid-template-columns: 1fr; }
+      .field label {
+        grid-column: 1 / -1;
+        font-size: 0.9rem;
+        color: #334155;
+        font-weight: 600;
+      }
+      .hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-weight: 500;
+        margin-left: 0.35rem;
+      }
+      .unit {
+        min-width: 3.6rem;
+        color: var(--muted);
+        font-size: 0.88rem;
+        padding-bottom: 0.55rem;
+      }
+
+      input[type="text"],
+      select {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 0.7rem 0.8rem;
+        font: inherit;
+        font-family: var(--mono);
+        font-size: 1rem;
+        background: #fff;
+        color: var(--ink);
+      }
+      input[type="text"]:focus,
+      select:focus {
+        outline: none;
+        border-color: #94a3b8;
+        box-shadow: 0 0 0 3px rgba(51, 65, 85, 0.18);
+      }
+      select { font-family: var(--sans); cursor: pointer; }
+
+      .seg {
+        display: inline-flex;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #f8fafc;
+      }
+      .seg button {
+        border: 0;
+        background: transparent;
+        padding: 0.65rem 0.8rem;
+        font: inherit;
+        cursor: pointer;
+        color: #475569;
+        min-width: 4.2rem;
+      }
+      .seg button[aria-pressed="true"] {
+        background: var(--accent);
+        color: #fff;
+        font-weight: 650;
+      }
+
+      .row-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin-top: 0.35rem;
+      }
+      button.btn {
+        border-radius: 12px;
+        border: 1px solid transparent;
+        padding: 0.7rem 0.95rem;
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+      }
+      button.btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      button.btn-primary:hover { background: #1e293b; }
+      button.btn-ghost {
+        background: #fff;
+        border-color: #cbd5e1;
+        color: #334155;
+      }
+      button.btn-ghost:hover { background: #f8fafc; }
+
+      .formula-box {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 0.8rem 0.9rem;
+        font-size: 0.9rem;
+        line-height: 1.55;
+        margin-bottom: 0.85rem;
+      }
+      .formula-box .t { font-weight: 700; margin-bottom: 0.25rem; }
+
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.65rem;
+      }
+      .stat {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 0.75rem 0.8rem;
+        background: #fff;
+        min-height: 5.1rem;
+      }
+      .stat .l {
+        font-size: 0.78rem;
+        color: var(--muted);
+        margin-bottom: 0.25rem;
+      }
+      .stat .v {
+        font-size: 1.15rem;
+        font-weight: 700;
+        word-break: break-word;
+      }
+      .stat.hi {
+        background: #fffbeb;
+        border-color: #fcd34d;
+      }
+      .stat.hi .l { color: #b91c1c; font-weight: 700; }
+      .stat.hi .v {
+        color: #b91c1c;
+        font-size: clamp(1.55rem, 4vw, 2rem);
+        font-weight: 800;
+        font-family: var(--mono);
+        line-height: 1.15;
+      }
+      .stat.danger {
+        background: var(--danger-bg);
+        border-color: #991b1b;
+      }
+      .stat.danger .l { color: var(--danger-ink); font-weight: 700; }
+      .stat.danger .v {
+        color: var(--danger-ink);
+        font-size: clamp(1.55rem, 4vw, 2rem);
+        font-weight: 800;
+        font-family: var(--mono);
+        line-height: 1.15;
+      }
+
+      .exact {
+        margin-top: 0.55rem;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .limit-line {
+        margin-top: 0.55rem;
+        font-size: 0.78rem;
+        color: #7f1d1d;
+        font-weight: 600;
+      }
+      .stat.danger .limit-line { color: #ffedd5; font-weight: 600; }
+
+      hr.sep {
+        border: 0;
+        border-top: 1px solid var(--line);
+        margin: 0.9rem 0;
+      }
+
+      .guide .t { font-weight: 700; margin-bottom: 0.35rem; }
+      .guide ol {
+        margin: 0;
+        padding-left: 1.2rem;
+        color: #334155;
+      }
+      .guide li { margin: 0.2rem 0; }
+      .guide .note {
+        margin: 0.55rem 0 0;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+
+      .alert {
+        margin-top: 0.75rem;
+        border-radius: 12px;
+        padding: 0.7rem 0.8rem;
+        font-size: 0.82rem;
+        line-height: 1.45;
+      }
+      .alert.warn {
+        background: var(--warn-bg);
+        border: 1px solid var(--warn-line);
+        color: var(--warn-ink);
+      }
+      .alert.danger {
+        background: #fef2f2;
+        border: 1px solid #fca5a5;
+        color: #991b1b;
+      }
+      .alert.ok {
+        background: var(--ok-bg);
+        border: 1px solid #a7f3d0;
+        color: var(--ok-ink);
+      }
+      .alert.info {
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        color: #334155;
+      }
+
+      .drug-note {
+        margin: -0.25rem 0 0.85rem;
+        font-size: 0.8rem;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      #adenosine-panel[hidden],
+      #vial-fields[hidden],
+      #direct-fields[hidden] {
+        display: none !important;
+      }
+
+      footer {
+        margin-top: 1.25rem;
+        color: var(--muted);
+        font-size: 0.78rem;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 520px) {
+        .field { grid-template-columns: 1fr auto; }
+        .field input, .field select { grid-column: 1 / 2; }
+        .unit { grid-column: 2 / 3; }
+        .stats { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#main">跳至主要內容</a>
+    <div class="wrap">
+      <header>
+        <h1>小兒／嬰幼兒體重劑量計算</h1>
+        <p class="sub">第一線救護輔助工具（可離線單檔使用）</p>
+        <p class="formula">
+          體積(mL) = <code>[劑量 × 體重] ÷ 濃度(mg/mL)</code>；
+          濃度可由「每支總量 ÷ 每支容量」或直接輸入。
+        </p>
+      </header>
+
+      <main id="main" class="grid">
+        <section class="card" aria-labelledby="inputs-title">
+          <h2 id="inputs-title">輸入參數</h2>
+
+          <div class="field full">
+            <label for="drug">常用急救藥物（學名）</label>
+            <select id="drug" aria-describedby="drug-note"></select>
+          </div>
+          <p id="drug-note" class="drug-note">選擇後會帶入常見劑量與包裝濃度；可再自行微調數字。仍請依醫囑／協議核對。</p>
+
+          <div id="adenosine-panel" class="field" hidden>
+            <label>Adenosine 劑次</label>
+            <div class="seg" role="group" aria-label="Adenosine 劑次">
+              <button type="button" id="ado-first" aria-pressed="true">首劑 0.1 mg/kg</button>
+              <button type="button" id="ado-second" aria-pressed="false">再劑 0.2 mg/kg</button>
+            </div>
+            <div class="unit"></div>
+          </div>
+
+          <div class="field">
+            <label for="dose">劑量 Dose <span class="hint" id="dose-hint"></span></label>
+            <input id="dose" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 0.01" />
+            <div class="seg" role="group" aria-label="劑量單位">
+              <button type="button" id="unit-mg" aria-pressed="true">mg/kg</button>
+              <button type="button" id="unit-mcg" aria-pressed="false">mcg/kg</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="weight">體重 Weight</label>
+            <input id="weight" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 10" />
+            <div class="unit">kg</div>
+          </div>
+
+          <div class="field full">
+            <label for="conc-mode">濃度輸入方式</label>
+            <select id="conc-mode">
+              <option value="vial">每支總量 + 每支容量</option>
+              <option value="direct">直接輸入濃度 (mg/mL)</option>
+            </select>
+          </div>
+
+          <div id="vial-fields">
+            <div class="field">
+              <label for="mg-per-vial">每支總量 Total drug per vial</label>
+              <input id="mg-per-vial" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 150" />
+              <div class="unit">mg/支</div>
+            </div>
+            <div class="field">
+              <label for="ml-per-vial">每支容量 Vial volume</label>
+              <input id="ml-per-vial" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 3" />
+              <div class="unit">mL/支</div>
+            </div>
+          </div>
+
+          <div id="direct-fields" hidden>
+            <div class="field">
+              <label for="conc">濃度 Concentration</label>
+              <input id="conc" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 50" />
+              <div class="unit">mg/mL</div>
+            </div>
+            <div class="field">
+              <label for="pack-ml">包裝容量（計算開幾支用，可選）</label>
+              <input id="pack-ml" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 3" />
+              <div class="unit">mL/支</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="decimals">顯示小數位數</label>
+            <select id="decimals">
+              <option value="auto" selected>自動精準度（建議）</option>
+              <option value="2">固定 2 位</option>
+              <option value="3">固定 3 位</option>
+              <option value="4">固定 4 位</option>
+              <option value="5">固定 5 位</option>
+            </select>
+            <div class="unit">位</div>
+          </div>
+
+          <div class="row-actions">
+            <button type="button" class="btn btn-primary" id="btn-example">套用範例</button>
+            <button type="button" class="btn btn-ghost" id="btn-clear">清空</button>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="results-title">
+          <h2 id="results-title">結果</h2>
+
+          <div class="formula-box">
+            <div class="t">計算公式</div>
+            <div>體積(mL) ＝ <span class="mono">[劑量 × 體重] ÷ 濃度(mg/mL)</span></div>
+            <div id="conc-line">等效濃度(mg/mL) ＝ —</div>
+          </div>
+
+          <div class="stats" aria-live="polite">
+            <div class="stat hi">
+              <div class="l">至少需要開幾支</div>
+              <div class="v" id="out-vials">—</div>
+            </div>
+            <div class="stat hi">
+              <div class="l">需抽體積 (mL)</div>
+              <div class="v" id="out-ml">—</div>
+              <div class="exact" id="out-ml-exact"></div>
+            </div>
+            <div class="stat danger">
+              <div class="l">⚠️ 總劑量</div>
+              <div class="v" id="out-mg">—</div>
+              <div class="exact" id="out-mg-exact"></div>
+              <div class="limit-line" id="out-limit"></div>
+            </div>
+            <div class="stat">
+              <div class="l">使用濃度 (mg/mL)</div>
+              <div class="v mono" id="out-conc">—</div>
+            </div>
+          </div>
+
+          <hr class="sep" />
+
+          <div class="guide">
+            <div class="t">抽藥建議</div>
+            <div id="draw-guide"><p style="color:#64748b;margin:0">—</p></div>
+          </div>
+
+          <div id="alerts"></div>
+        </section>
+      </main>
+
+      <footer>
+        © 2026 — 僅供教學與輔助計算；非醫囑。臨床處置請依醫囑與院內／區域救護協議，並執行雙人查核。
+        單次上下限為常見參考值，非院規。本檔為單一路徑 HTML，可直接離線開啟使用。
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var EPS = 1e-9;
+
+        /** @type {Array<Object>} */
+        var DRUGS = [
+          {
+            id: "custom",
+            name: "— 自行輸入 —",
+            note: "可直接輸入或微調劑量與濃度；不會自動清空先前數字。",
+            dose: "",
+            doseUnit: "mg",
+            concMode: "vial",
+            mgPerVial: "",
+            mlPerVial: "",
+            conc: "",
+            packMl: "",
+          },
+          {
+            id: "epinephrine-1-10000",
+            name: "Epinephrine (1:10,000 / 0.1 mg/mL)",
+            note: "常見小兒心肺復甦 IV/IO：0.01 mg/kg（= 10 mcg/kg）。包裝常為 0.1 mg/mL。常見單次上限 1 mg。",
+            dose: "0.01",
+            doseUnit: "mg",
+            concMode: "direct",
+            mgPerVial: "1",
+            mlPerVial: "10",
+            conc: "0.1",
+            packMl: "10",
+            maxSingleMg: 1,
+          },
+          {
+            id: "epinephrine-1-1000",
+            name: "Epinephrine (1:1,000 / 1 mg/mL)",
+            note: "常見肌注過敏急救等情境；濃度 1 mg/mL。劑量請依協議，勿與 1:10,000 混淆。常見單次上限 1 mg。",
+            dose: "0.01",
+            doseUnit: "mg",
+            concMode: "direct",
+            mgPerVial: "1",
+            mlPerVial: "1",
+            conc: "1",
+            packMl: "1",
+            maxSingleMg: 1,
+          },
+          {
+            id: "amiodarone",
+            name: "Amiodarone",
+            note: "常見小兒抗心律不整：5 mg/kg。常見包裝 150 mg / 3 mL（50 mg/mL）。體積為原液換算，實際給藥請依稀釋規範。常見單次上限 300 mg。",
+            dose: "5",
+            doseUnit: "mg",
+            concMode: "vial",
+            mgPerVial: "150",
+            mlPerVial: "3",
+            conc: "50",
+            packMl: "3",
+            maxSingleMg: 300,
+          },
+          {
+            id: "adenosine",
+            name: "Adenosine",
+            note: "首劑 0.1 mg/kg（上限 6 mg）；再劑 0.2 mg/kg（上限 12 mg）。常見包裝 6 mg / 2 mL（3 mg/mL）。",
+            dose: "0.1",
+            doseUnit: "mg",
+            concMode: "vial",
+            mgPerVial: "6",
+            mlPerVial: "2",
+            conc: "3",
+            packMl: "2",
+            maxSingleMg: 6,
+            adenosine: true,
+          },
+          {
+            id: "atropine-sulfate",
+            name: "Atropine sulfate",
+            note: "常見 0.02 mg/kg。常見包裝 1 mg / 1 mL。常見單次下限 0.1 mg；兒童上限約 0.5 mg，青少年可至 1 mg。",
+            dose: "0.02",
+            doseUnit: "mg",
+            concMode: "vial",
+            mgPerVial: "1",
+            mlPerVial: "1",
+            conc: "1",
+            packMl: "1",
+            minSingleMg: 0.1,
+            maxSingleMg: 0.5,
+            maxAdolescentMg: 1,
+          },
+          {
+            id: "lidocaine",
+            name: "Lidocaine",
+            note: "常見 1 mg/kg。此預設以 20 mg/mL（2%）計算；請核對實際包裝。常見單次上限 100 mg。",
+            dose: "1",
+            doseUnit: "mg",
+            concMode: "direct",
+            mgPerVial: "100",
+            mlPerVial: "5",
+            conc: "20",
+            packMl: "5",
+            maxSingleMg: 100,
+          },
+          {
+            id: "magnesium-sulfate",
+            name: "Magnesium sulfate",
+            note: "常見 25–50 mg/kg（此預設 50 mg/kg）。常見 500 mg/mL；請依院內稀釋規範執行。常見單次上限 2 g（2000 mg）。",
+            dose: "50",
+            doseUnit: "mg",
+            concMode: "direct",
+            mgPerVial: "1000",
+            mlPerVial: "2",
+            conc: "500",
+            packMl: "2",
+            maxSingleMg: 2000,
+          },
+          {
+            id: "calcium-chloride",
+            name: "Calcium chloride",
+            note: "常見 20 mg/kg。常見 100 mg/mL（10%）；請依協議給藥途徑與速率。常見單次上限 1 g（1000 mg）。",
+            dose: "20",
+            doseUnit: "mg",
+            concMode: "direct",
+            mgPerVial: "1000",
+            mlPerVial: "10",
+            conc: "100",
+            packMl: "10",
+            maxSingleMg: 1000,
+          },
+          {
+            id: "naloxone-hydrochloride",
+            name: "Naloxone hydrochloride",
+            note: "常見 0.1 mg/kg。常見包裝 0.4 mg / 1 mL。常見單次上限 2 mg。",
+            dose: "0.1",
+            doseUnit: "mg",
+            concMode: "vial",
+            mgPerVial: "0.4",
+            mlPerVial: "1",
+            conc: "0.4",
+            packMl: "1",
+            maxSingleMg: 2,
+          },
+          {
+            id: "midazolam",
+            name: "Midazolam",
+            note: "常見 IV 約 0.1 mg/kg（依適應症調整）。常見 5 mg / 1 mL。常見單次上限 5 mg。",
+            dose: "0.1",
+            doseUnit: "mg",
+            concMode: "vial",
+            mgPerVial: "5",
+            mlPerVial: "1",
+            conc: "5",
+            packMl: "1",
+            maxSingleMg: 5,
+          },
+          {
+            id: "fentanyl-citrate",
+            name: "Fentanyl citrate",
+            note: "常見 1–2 mcg/kg（此預設 1 mcg/kg）。常見 50 mcg/mL = 0.05 mg/mL。常見單次上限 50 mcg。",
+            dose: "1",
+            doseUnit: "mcg",
+            concMode: "direct",
+            mgPerVial: "0.1",
+            mlPerVial: "2",
+            conc: "0.05",
+            packMl: "2",
+            maxSingleMg: 0.05,
+          },
+          {
+            id: "morphine-sulfate",
+            name: "Morphine sulfate",
+            note: "常見 0.1 mg/kg。常見 10 mg / 1 mL。常見單次上限 10 mg。",
+            dose: "0.1",
+            doseUnit: "mg",
+            concMode: "vial",
+            mgPerVial: "10",
+            mlPerVial: "1",
+            conc: "10",
+            packMl: "1",
+            maxSingleMg: 10,
+          },
+          {
+            id: "dextrose",
+            name: "Dextrose (Glucose)",
+            note: "常見 0.5–1 g/kg（此預設 0.5 g/kg = 500 mg/kg）。D10W = 100 mg/mL。常見單次上限約 25 g。",
+            dose: "500",
+            doseUnit: "mg",
+            concMode: "direct",
+            mgPerVial: "5000",
+            mlPerVial: "50",
+            conc: "100",
+            packMl: "50",
+            maxSingleMg: 25000,
+          },
+          {
+            id: "ketamine",
+            name: "Ketamine",
+            note: "常見 IV 鎮靜約 1–2 mg/kg（此預設 1 mg/kg）。常見 50 mg/mL；請依協議稀釋／給藥。常見單次上限 100 mg。",
+            dose: "1",
+            doseUnit: "mg",
+            concMode: "direct",
+            mgPerVial: "500",
+            mlPerVial: "10",
+            conc: "50",
+            packMl: "10",
+            maxSingleMg: 100,
+          },
+          {
+            id: "diphenhydramine",
+            name: "Diphenhydramine",
+            note: "常見 1 mg/kg。常見 50 mg / 1 mL。常見單次上限 50 mg。",
+            dose: "1",
+            doseUnit: "mg",
+            concMode: "vial",
+            mgPerVial: "50",
+            mlPerVial: "1",
+            conc: "50",
+            packMl: "1",
+            maxSingleMg: 50,
+          },
+        ];
+
+        var el = {
+          drug: document.getElementById("drug"),
+          drugNote: document.getElementById("drug-note"),
+          adenosinePanel: document.getElementById("adenosine-panel"),
+          adoFirst: document.getElementById("ado-first"),
+          adoSecond: document.getElementById("ado-second"),
+          dose: document.getElementById("dose"),
+          doseHint: document.getElementById("dose-hint"),
+          unitMg: document.getElementById("unit-mg"),
+          unitMcg: document.getElementById("unit-mcg"),
+          weight: document.getElementById("weight"),
+          concMode: document.getElementById("conc-mode"),
+          vialFields: document.getElementById("vial-fields"),
+          directFields: document.getElementById("direct-fields"),
+          mgPerVial: document.getElementById("mg-per-vial"),
+          mlPerVial: document.getElementById("ml-per-vial"),
+          conc: document.getElementById("conc"),
+          packMl: document.getElementById("pack-ml"),
+          decimals: document.getElementById("decimals"),
+          concLine: document.getElementById("conc-line"),
+          outVials: document.getElementById("out-vials"),
+          outMl: document.getElementById("out-ml"),
+          outMlExact: document.getElementById("out-ml-exact"),
+          outMg: document.getElementById("out-mg"),
+          outMgExact: document.getElementById("out-mg-exact"),
+          outLimit: document.getElementById("out-limit"),
+          outConc: document.getElementById("out-conc"),
+          drawGuide: document.getElementById("draw-guide"),
+          alerts: document.getElementById("alerts"),
+          btnExample: document.getElementById("btn-example"),
+          btnClear: document.getElementById("btn-clear"),
+        };
+
+        var doseUnit = "mg";
+        var adenosinePhase = "first"; // first | second
+        var unitConvertNote = "";
+
+        function currentDrug() {
+          return DRUGS.find(function (x) { return x.id === el.drug.value; }) || DRUGS[0];
+        }
+
+        function parseNumber(raw) {
+          if (typeof raw !== "string") return { ok: false, reason: "empty", value: NaN };
+          var t = raw.trim().replace(/,/g, ".");
+          if (t === "") return { ok: false, reason: "empty", value: NaN };
+          // typing in progress: "1." or "."
+          if (t === "." || /^\d+\.$/.test(t)) {
+            return { ok: false, reason: "incomplete", value: NaN };
+          }
+          if (!/^\d*\.?\d+$/.test(t)) return { ok: false, reason: "invalid", value: NaN };
+          var x = Number(t);
+          if (!Number.isFinite(x)) return { ok: false, reason: "invalid", value: NaN };
+          if (x < 0) return { ok: false, reason: "negative", value: NaN };
+          if (x === 0) return { ok: false, reason: "zero", value: 0 };
+          return { ok: true, reason: "ok", value: x };
+        }
+
+        function autoDecimals(val) {
+          if (!Number.isFinite(val) || val === 0) return 3;
+          var a = Math.abs(val);
+          if (a >= 100) return 2;
+          if (a >= 1) return 3;
+          if (a >= 0.1) return 3;
+          if (a >= 0.01) return 4;
+          if (a >= 0.001) return 5;
+          return 6;
+        }
+
+        function resolveDecimals(mode, val) {
+          if (mode === "auto") return autoDecimals(val);
+          var n = parseInt(mode, 10);
+          return Number.isFinite(n) ? Math.max(0, Math.min(6, n)) : 3;
+        }
+
+        function roundTo(val, d) {
+          var f = Math.pow(10, d);
+          return Math.round(val * f) / f;
+        }
+
+        function fmt(val, mode) {
+          if (!Number.isFinite(val)) return "—";
+          var d = resolveDecimals(mode, val);
+          return roundTo(val, d).toFixed(d);
+        }
+
+        function exactStr(val) {
+          if (!Number.isFinite(val)) return "";
+          var s = val.toPrecision(8);
+          if (/e/i.test(s)) return String(val);
+          if (s.indexOf(".") !== -1) s = String(Number(s));
+          return s;
+        }
+
+        function formatMgAmount(mg, mode) {
+          if (!Number.isFinite(mg)) return "—";
+          if (mg > 0 && mg < 1) {
+            return fmt(mg * 1000, mode) + " mcg（" + fmt(mg, mode) + " mg）";
+          }
+          if (mg >= 1000) {
+            return fmt(mg / 1000, mode) + " g（" + fmt(mg, mode) + " mg）";
+          }
+          return fmt(mg, mode) + " mg";
+        }
+
+        function setDoseUnit(unit, opts) {
+          opts = opts || {};
+          var next = unit === "mcg" ? "mcg" : "mg";
+          var prev = doseUnit;
+          var convert = opts.convert !== false;
+          var silent = !!opts.silent;
+
+          if (convert && next !== prev) {
+            var p = parseNumber(el.dose.value);
+            // also allow converting a typed zero / incomplete? only convert valid >0
+            if (!p.ok) {
+              // try parse allowing zero for conversion of leftover values
+              var t = el.dose.value.trim().replace(/,/g, ".");
+              var x = Number(t);
+              if (t !== "" && Number.isFinite(x) && x > 0) {
+                p = { ok: true, value: x };
+              }
+            }
+            if (p.ok && p.value > 0) {
+              var converted = next === "mcg" ? p.value * 1000 : p.value / 1000;
+              var d = Math.min(6, Math.max(autoDecimals(converted), 0));
+              el.dose.value = String(roundTo(converted, d));
+              unitConvertNote =
+                "已將劑量由 " +
+                (prev === "mcg" ? "mcg/kg" : "mg/kg") +
+                " 換算為 " +
+                (next === "mcg" ? "mcg/kg" : "mg/kg") +
+                "。";
+            } else {
+              unitConvertNote = "";
+            }
+          } else if (!silent) {
+            unitConvertNote = "";
+          }
+
+          doseUnit = next;
+          el.unitMg.setAttribute("aria-pressed", doseUnit === "mg" ? "true" : "false");
+          el.unitMcg.setAttribute("aria-pressed", doseUnit === "mcg" ? "true" : "false");
+          el.doseHint.textContent =
+            doseUnit === "mcg" ? "（目前：mcg/kg，內部換算為 mg）" : "（目前：mg/kg）";
+          if (!silent) recalculate();
+        }
+
+        function syncConcModeUI() {
+          var vial = el.concMode.value === "vial";
+          el.vialFields.hidden = !vial;
+          el.directFields.hidden = vial;
+        }
+
+        function syncAdenosineUI() {
+          var d = currentDrug();
+          var show = !!(d && d.adenosine);
+          el.adenosinePanel.hidden = !show;
+          el.adoFirst.setAttribute("aria-pressed", adenosinePhase === "first" ? "true" : "false");
+          el.adoSecond.setAttribute("aria-pressed", adenosinePhase === "second" ? "true" : "false");
+        }
+
+        function setAdenosinePhase(phase) {
+          adenosinePhase = phase === "second" ? "second" : "first";
+          if (currentDrug().adenosine) {
+            el.dose.value = adenosinePhase === "second" ? "0.2" : "0.1";
+            setDoseUnit("mg", { convert: false, silent: true });
+          }
+          syncAdenosineUI();
+          recalculate();
+        }
+
+        function fillDrugSelect() {
+          el.drug.innerHTML = "";
+          DRUGS.forEach(function (d) {
+            var opt = document.createElement("option");
+            opt.value = d.id;
+            opt.textContent = d.name;
+            el.drug.appendChild(opt);
+          });
+        }
+
+        function applyDrug(id) {
+          var d = DRUGS.find(function (x) { return x.id === id; }) || DRUGS[0];
+          el.drug.value = d.id;
+          el.drugNote.textContent = d.note
+            ? d.note
+            : "選擇後會帶入常見劑量與包裝濃度；可再自行微調數字。仍請依醫囑／協議核對。";
+
+          unitConvertNote = "";
+          if (d.adenosine) {
+            adenosinePhase = "first";
+          }
+
+          if (d.id !== "custom") {
+            el.dose.value = d.adenosine
+              ? (adenosinePhase === "second" ? "0.2" : "0.1")
+              : d.dose;
+            setDoseUnit(d.doseUnit, { convert: false, silent: true });
+            el.concMode.value = d.concMode;
+            el.mgPerVial.value = d.mgPerVial;
+            el.mlPerVial.value = d.mlPerVial;
+            el.conc.value = d.conc;
+            el.packMl.value = d.packMl;
+          }
+
+          syncConcModeUI();
+          syncAdenosineUI();
+          recalculate();
+        }
+
+        function applyExample() {
+          applyDrug("amiodarone");
+          el.weight.value = "10";
+          el.decimals.value = "auto";
+          recalculate();
+        }
+
+        function clearAll() {
+          el.drug.value = "custom";
+          el.drugNote.textContent =
+            "可直接輸入或微調劑量與濃度；不會自動清空先前數字。仍請依醫囑／協議核對。";
+          el.dose.value = "";
+          el.weight.value = "";
+          el.concMode.value = "vial";
+          el.mgPerVial.value = "";
+          el.mlPerVial.value = "";
+          el.conc.value = "";
+          el.packMl.value = "";
+          el.decimals.value = "auto";
+          adenosinePhase = "first";
+          unitConvertNote = "";
+          setDoseUnit("mg", { convert: false, silent: true });
+          syncConcModeUI();
+          syncAdenosineUI();
+          recalculate();
+        }
+
+        function alertHTML(type, text) {
+          return '<div class="alert ' + type + '">' + text + "</div>";
+        }
+
+        function pushAlert(alerts, type, text) {
+          alerts.push([type, text]);
+        }
+
+        function activeMaxMg(drug) {
+          if (!drug) return NaN;
+          if (drug.adenosine) {
+            return adenosinePhase === "second" ? 12 : 6;
+          }
+          return typeof drug.maxSingleMg === "number" ? drug.maxSingleMg : NaN;
+        }
+
+        function recalculate() {
+          var mode = el.decimals.value;
+          var doseP = parseNumber(el.dose.value);
+          var weightP = parseNumber(el.weight.value);
+          var concMode = el.concMode.value;
+          var drug = currentDrug();
+          var alerts = [];
+          var concMgPerMl = NaN;
+          var packVolumeMl = NaN;
+
+          if (concMode === "vial") {
+            var mgP = parseNumber(el.mgPerVial.value);
+            var mlP = parseNumber(el.mlPerVial.value);
+            if (mgP.reason === "incomplete" || mlP.reason === "incomplete") {
+              // typing: no warn
+            } else {
+              if (!mgP.ok) pushAlert(alerts, "warn", "請輸入有效的「每支總量 (mg/支)」（須 &gt; 0）。");
+              if (!mlP.ok) pushAlert(alerts, "warn", "請輸入有效的「每支容量 (mL/支)」（須 &gt; 0）。");
+            }
+            if (mgP.ok && mlP.ok) {
+              packVolumeMl = mlP.value;
+              concMgPerMl = mgP.value / mlP.value;
+            }
+          } else {
+            var cP = parseNumber(el.conc.value);
+            var pP = parseNumber(el.packMl.value);
+            if (cP.reason !== "incomplete" && !cP.ok) {
+              pushAlert(alerts, "warn", "請輸入有效的「濃度 (mg/mL)」（須 &gt; 0）。");
+            }
+            if (cP.ok) concMgPerMl = cP.value;
+            if (pP.ok) {
+              packVolumeMl = pP.value;
+            } else if (cP.ok && pP.reason !== "incomplete" && el.packMl.value.trim() === "") {
+              pushAlert(alerts, "warn", "未填包裝容量時，仍可算需抽 mL，但無法估算「至少開幾支」。");
+            } else if (cP.ok && pP.reason === "invalid") {
+              pushAlert(alerts, "warn", "包裝容量格式無效；仍可算需抽 mL，但無法估算支數。");
+            }
+          }
+
+          if (doseP.reason === "zero") pushAlert(alerts, "warn", "劑量須大於 0。");
+          else if (doseP.reason === "invalid" || doseP.reason === "negative") {
+            pushAlert(alerts, "warn", "請輸入有效的劑量（正數）。");
+          } else if (doseP.reason === "empty") {
+            pushAlert(alerts, "warn", "請輸入劑量。");
+          }
+
+          if (weightP.reason === "zero") pushAlert(alerts, "warn", "體重須大於 0。");
+          else if (weightP.reason === "invalid" || weightP.reason === "negative") {
+            pushAlert(alerts, "warn", "請輸入有效的體重 kg（正數）。");
+          } else if (weightP.reason === "empty") {
+            pushAlert(alerts, "warn", "請輸入體重。");
+          }
+
+          if (weightP.ok && weightP.value > 100) {
+            pushAlert(alerts, "warn", "體重 &gt; 100 kg：請確認是否為小兒個案，或改以成人劑量規範。");
+          }
+
+          var ready =
+            doseP.ok &&
+            weightP.ok &&
+            Number.isFinite(concMgPerMl) &&
+            concMgPerMl > 0;
+
+          el.outVials.textContent = "—";
+          el.outMl.textContent = "—";
+          el.outMlExact.textContent = "";
+          el.outMg.textContent = "—";
+          el.outMgExact.textContent = "";
+          el.outLimit.textContent = "";
+          el.outConc.textContent = "—";
+          el.drawGuide.innerHTML = '<p style="color:#64748b;margin:0">—</p>';
+
+          if (Number.isFinite(concMgPerMl) && concMgPerMl > 0) {
+            el.concLine.innerHTML =
+              concMode === "vial"
+                ? '等效濃度(mg/mL) ＝ <span class="mono">每支總量 ÷ 每支容量 = ' +
+                  fmt(concMgPerMl, mode) +
+                  " mg/mL</span>"
+                : '使用濃度(mg/mL) ＝ <span class="mono">' +
+                  fmt(concMgPerMl, mode) +
+                  " mg/mL</span>";
+            el.outConc.textContent = fmt(concMgPerMl, mode);
+          } else {
+            el.concLine.textContent = "等效濃度(mg/mL) ＝ —";
+          }
+
+          if (unitConvertNote) pushAlert(alerts, "ok", unitConvertNote);
+
+          if (!ready) {
+            renderAlerts(alerts);
+            return;
+          }
+
+          var doseMgPerKg = doseUnit === "mcg" ? doseP.value / 1000 : doseP.value;
+          var totalMg = doseMgPerKg * weightP.value;
+          var totalMl = totalMg / concMgPerMl;
+
+          var totalMgLabel =
+            doseUnit === "mcg"
+              ? fmt(totalMg * 1000, mode) + " mcg（" + fmt(totalMg, mode) + " mg）"
+              : fmt(totalMg, mode) + " mg";
+
+          el.outMg.textContent = totalMgLabel;
+          el.outMgExact.textContent =
+            "精確值：" +
+            exactStr(totalMg) +
+            " mg" +
+            (doseUnit === "mcg" ? " ／ " + exactStr(totalMg * 1000) + " mcg" : "");
+
+          var mlDecimals = resolveDecimals(mode, totalMl);
+          var shownMlNum = roundTo(totalMl, mlDecimals);
+          el.outMl.textContent = shownMlNum.toFixed(mlDecimals);
+          var relDiff = totalMl > 0 ? Math.abs(shownMlNum - totalMl) / totalMl : 0;
+          el.outMlExact.textContent =
+            "精確值：" +
+            exactStr(totalMl) +
+            " mL" +
+            (relDiff > 0.05 ? "（注意：顯示值經四捨五入，請以精確值雙人核對）" : "");
+
+          // dose limit checks (reference only; do not auto-cap)
+          var maxMg = activeMaxMg(drug);
+          var minMg = typeof drug.minSingleMg === "number" ? drug.minSingleMg : NaN;
+          var adoMax = typeof drug.maxAdolescentMg === "number" ? drug.maxAdolescentMg : NaN;
+          var limitBits = [];
+          if (Number.isFinite(minMg)) limitBits.push("常見下限 " + formatMgAmount(minMg, mode));
+          if (Number.isFinite(maxMg)) {
+            if (drug.adenosine) {
+              limitBits.push(
+                (adenosinePhase === "second" ? "再劑" : "首劑") +
+                  "常見上限 " +
+                  formatMgAmount(maxMg, mode)
+              );
+            } else if (Number.isFinite(adoMax)) {
+              limitBits.push(
+                "兒童常見上限 " +
+                  formatMgAmount(maxMg, mode) +
+                  "；青少年可至 " +
+                  formatMgAmount(adoMax, mode)
+              );
+            } else {
+              limitBits.push("常見單次上限 " + formatMgAmount(maxMg, mode));
+            }
+          }
+          el.outLimit.textContent = limitBits.length ? limitBits.join(" ｜ ") : "";
+
+          if (Number.isFinite(maxMg) && totalMg > maxMg + EPS) {
+            var overMsg =
+              "已超過常見單次上限 " +
+              formatMgAmount(maxMg, mode) +
+              "（目前 " +
+              formatMgAmount(totalMg, mode) +
+              "）。請依協議確認，工具不會自動封頂。";
+            if (Number.isFinite(adoMax)) {
+              overMsg +=
+                " 青少年常見上限可至 " +
+                formatMgAmount(adoMax, mode) +
+                "；若適用請依年齡／協議判斷。";
+              if (totalMg <= adoMax + EPS) {
+                pushAlert(alerts, "warn", overMsg);
+              } else {
+                pushAlert(alerts, "danger", overMsg);
+              }
+            } else {
+              pushAlert(alerts, "danger", overMsg);
+            }
+          } else if (Number.isFinite(minMg) && totalMg + EPS < minMg) {
+            pushAlert(
+              alerts,
+              "warn",
+              "低於常見單次下限 " +
+                formatMgAmount(minMg, mode) +
+                "（目前 " +
+                formatMgAmount(totalMg, mode) +
+                "）。部分協議會給到下限；請依規範確認。"
+            );
+          }
+
+          if (Number.isFinite(packVolumeMl) && packVolumeMl > 0) {
+            var vialsExact = totalMl / packVolumeMl;
+            var wholeVials = Math.floor(vialsExact + EPS);
+            var remainderMl = totalMl - wholeVials * packVolumeMl;
+            if (remainderMl < EPS) remainderMl = 0;
+            var vialsCeil = remainderMl > 0 ? wholeVials + 1 : wholeVials;
+            if (totalMl > 0 && vialsCeil === 0) vialsCeil = 1;
+            el.outVials.textContent = String(vialsCeil);
+
+            if (vialsCeil === 0) {
+              el.drawGuide.innerHTML = '<p style="color:#64748b;margin:0">—</p>';
+            } else {
+              var items = [];
+              for (var i = 0; i < wholeVials; i++) {
+                items.push(
+                  "<li>第 " +
+                    (i + 1) +
+                    " 支：抽 " +
+                    fmt(packVolumeMl, mode) +
+                    " mL</li>"
+                );
+              }
+              if (remainderMl > 0) {
+                items.push(
+                  "<li>第 " +
+                    vialsCeil +
+                    " 支：抽 " +
+                    fmt(remainderMl, mode) +
+                    " mL</li>"
+                );
+              }
+              el.drawGuide.innerHTML =
+                "<ol>" +
+                items.join("") +
+                "</ol>" +
+                '<p class="note">※ 向上取整至少需開 ' +
+                vialsCeil +
+                " 支；實際抽取合計 " +
+                fmt(totalMl, mode) +
+                " mL（精確 " +
+                exactStr(totalMl) +
+                " mL），約 " +
+                fmt(totalMg, mode) +
+                " mg。</p>";
+            }
+          } else {
+            el.outVials.textContent = "—";
+            el.drawGuide.innerHTML =
+              '<p style="margin:0;color:#334155">需抽 <span class="mono">' +
+              fmt(totalMl, mode) +
+              "</span> mL（精確 " +
+              exactStr(totalMl) +
+              " mL）。未提供包裝容量，無法估算支數。</p>";
+          }
+
+          if (totalMl > 0 && totalMl < 0.05) {
+            pushAlert(
+              alerts,
+              "warn",
+              "需抽體積很小（&lt; 0.05 mL）。請確認濃度／稀釋方式，並使用適當針筒刻度；優先參考「精確值」。"
+            );
+          }
+
+          if (doseUnit === "mcg") {
+            pushAlert(
+              alerts,
+              "info",
+              "已將 " +
+                fmt(doseP.value, mode) +
+                " mcg/kg 換算為 " +
+                fmt(doseMgPerKg, mode) +
+                " mg/kg 後計算。"
+            );
+          }
+
+          if (drug.adenosine) {
+            pushAlert(
+              alerts,
+              "info",
+              adenosinePhase === "second"
+                ? "目前為再劑設定（0.2 mg/kg，常見上限 12 mg）。"
+                : "目前為首劑設定（0.1 mg/kg，常見上限 6 mg）。"
+            );
+          }
+
+          renderAlerts(alerts);
+        }
+
+        function renderAlerts(alerts) {
+          var seen = {};
+          var html = "";
+          for (var i = 0; i < alerts.length; i++) {
+            var t = alerts[i][0];
+            var m = alerts[i][1];
+            var key = t + "|" + m;
+            if (seen[key]) continue;
+            seen[key] = true;
+            html += alertHTML(t, m);
+          }
+          el.alerts.innerHTML = html;
+        }
+
+        fillDrugSelect();
+        setDoseUnit("mg", { convert: false, silent: true });
+        syncConcModeUI();
+        syncAdenosineUI();
+
+        el.drug.addEventListener("change", function () {
+          applyDrug(el.drug.value);
+        });
+        el.concMode.addEventListener("change", function () {
+          syncConcModeUI();
+          recalculate();
+        });
+        el.unitMg.addEventListener("click", function () {
+          setDoseUnit("mg", { convert: true });
+        });
+        el.unitMcg.addEventListener("click", function () {
+          setDoseUnit("mcg", { convert: true });
+        });
+        el.adoFirst.addEventListener("click", function () {
+          setAdenosinePhase("first");
+        });
+        el.adoSecond.addEventListener("click", function () {
+          setAdenosinePhase("second");
+        });
+        el.btnExample.addEventListener("click", applyExample);
+        el.btnClear.addEventListener("click", clearAll);
+
+        [
+          el.dose,
+          el.weight,
+          el.mgPerVial,
+          el.mlPerVial,
+          el.conc,
+          el.packMl,
+          el.decimals,
+        ].forEach(function (node) {
+          node.addEventListener("input", function () {
+            unitConvertNote = "";
+            recalculate();
+          });
+          node.addEventListener("change", recalculate);
+        });
+
+        el.weight.value = "10";
+        applyDrug("epinephrine-1-10000");
+      })();
+    </script>
+  </body>
+</html>
